@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Variables de entorno
+.env
+.env.local
+
+# Base de datos SQLite (se regenera con prisma migrate + seed)
+*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Salida local de la herramienta graphify (caché/análisis, no es código del proyecto)
+graphify-out/

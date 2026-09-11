@@ -1,0 +1,36 @@
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.estado-badge__punto {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.estado-badge--disponible {
+  color: var(--color-leaf);
+}
+.estado-badge--disponible .estado-badge__punto {
+  background: var(--color-leaf);
+}
+
+.estado-badge--pocas-unidades {
+  color: var(--color-amber);
+}
+.estado-badge--pocas-unidades .estado-badge__punto {
+  background: var(--color-amber);
+}
+
+.estado-badge--agotado {
+  color: var(--color-coral);
+}
+.estado-badge--agotado .estado-badge__punto {
+  background: var(--color-coral);
+}

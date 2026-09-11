@@ -1,0 +1,25 @@
+.filtro-historial {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtro-historial__boton {
+  flex: 1;
+  min-height: 52px;
+  padding: 0.6rem 0.5rem;
+  border-radius: 14px;
+  border: 2px solid var(--color-border);
+  background: var(--color-paper-raised);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filtro-historial__boton--activo {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper-raised);
+}

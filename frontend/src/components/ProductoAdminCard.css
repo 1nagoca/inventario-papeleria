@@ -1,0 +1,12 @@
+.producto-admin-card__acciones {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.producto-admin-card__acciones .boton {
+  width: auto;
+  flex: 1;
+  min-height: 52px;
+  font-size: 1rem;
+}

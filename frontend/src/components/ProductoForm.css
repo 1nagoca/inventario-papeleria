@@ -1,0 +1,27 @@
+.producto-form {
+  background: var(--color-paper-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  list-style: none;
+}
+
+.producto-form--tarjeta {
+  border-left: 6px solid var(--color-ink);
+}
+
+.producto-form__pregunta {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+}
+
+.producto-form__acciones {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.producto-form__acciones .boton {
+  width: auto;
+  flex: 1;
+}

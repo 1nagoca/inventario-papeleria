@@ -1,0 +1,46 @@
+// Prisma schema — Inventario de Papelería
+// Ver regla de negocio en /CLAUDE.md: nunca modificar `stock` sin crear
+// el `Movimiento` correspondiente (misma transacción).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique
+  precio      Int
+  stock       Int      @default(0)
+  stockMinimo Int      @default(5) @map("stock_minimo")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  movimientos Movimiento[]
+
+  @@map("productos")
+}
+
+enum TipoMovimiento {
+  VENTA
+  ENTRADA
+}
+
+model Movimiento {
+  id             Int            @id @default(autoincrement())
+  productoId     Int            @map("producto_id")
+  tipo           TipoMovimiento
+  cantidad       Int
+  precioUnitario Int            @map("precio_unitario")
+  total          Int
+  fecha          DateTime       @default(now())
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  producto Product @relation(fields: [productoId], references: [id], onDelete: Restrict)
+
+  @@map("movimientos")
+}

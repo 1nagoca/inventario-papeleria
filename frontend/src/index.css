@@ -1,0 +1,135 @@
+:root {
+  /* Color — inspirada en una papelería: papel kraft, tinta de lapicero,
+     resaltador, y los sellos de "disponible" / "agotado" de un cuaderno de
+     ventas. */
+  --color-paper: #eae6dc;
+  --color-paper-raised: #f5f3ec;
+  --color-ink: #1b2a4a;
+  --color-ink-soft: #2e4270;
+  --color-text: #24211c;
+  --color-text-muted: #5c574c;
+  --color-border: #d8d2c4;
+  --color-leaf: #2f6b44;
+  --color-leaf-bg: #e1eee3;
+  --color-amber: #9c6b0a;
+  --color-amber-bg: #f3e6c8;
+  --color-coral: #a63a2c;
+  --color-coral-bg: #f3dcd6;
+
+  /* Tipografía */
+  --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-numeros: "Zilla Slab", Georgia, serif;
+
+  font-size: 18px;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 60px;
+  padding: 0.9rem 1.5rem;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  cursor: pointer;
+  width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.boton--primario {
+  background: var(--color-ink);
+  color: var(--color-paper-raised);
+}
+
+.boton--secundario {
+  background: var(--color-paper-raised);
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.boton--peligro {
+  background: var(--color-coral-bg);
+  color: var(--color-coral);
+  border-color: var(--color-coral);
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mensaje-error {
+  background: var(--color-coral-bg);
+  color: var(--color-coral);
+  border: 2px solid var(--color-coral);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.mensaje-exito {
+  background: var(--color-leaf-bg);
+  color: var(--color-leaf);
+  border: 2px solid var(--color-leaf);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.campo {
+  margin-bottom: 1.5rem;
+}
+
+.campo__etiqueta {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.campo__select,
+.campo__input {
+  width: 100%;
+  min-height: 60px;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 2px solid var(--color-border);
+  background: var(--color-paper-raised);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.campo__ayuda {
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+}
