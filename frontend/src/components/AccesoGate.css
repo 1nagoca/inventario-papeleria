@@ -1,0 +1,33 @@
+.acceso-pantalla {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--color-paper);
+}
+
+.acceso-tarjeta {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-paper-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+}
+
+.acceso-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  color: var(--color-ink);
+}
+
+.acceso-instruccion {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.acceso-cargando {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}

@@ -2,6 +2,8 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
+import { requireAppPassword } from "./middleware/requireAppPassword";
+import { authRouter } from "./routes/auth.routes";
 import {
   entriesRouter,
   movementsRouter,
@@ -19,10 +21,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/products", productsRouter);
-app.use("/api/sales", salesRouter);
-app.use("/api/entries", entriesRouter);
-app.use("/api/movements", movementsRouter);
+app.use("/api/auth", requireAppPassword, authRouter);
+app.use("/api/products", requireAppPassword, productsRouter);
+app.use("/api/sales", requireAppPassword, salesRouter);
+app.use("/api/entries", requireAppPassword, entriesRouter);
+app.use("/api/movements", requireAppPassword, movementsRouter);
 
 app.use(errorHandler);
 
