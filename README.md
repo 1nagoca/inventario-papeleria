@@ -167,3 +167,22 @@ el servicio se duerme sin tráfico. Mover la base de datos a Supabase
 resuelve la pérdida de datos, pero no ese problema; el bot sigue pausado
 hasta contar con un host que no se duerma (VM propia, plan pago de Render,
 etc.).
+
+## Ideas para el futuro
+
+Pedidas por Camilo el 2026-09-13, no implementadas todavía — quedan aquí
+anotadas para retomarlas más adelante, no son parte del MVP actual.
+
+- **Totales de venta por período en el Historial.** Además de la lista de
+  movimientos uno por uno, mostrar un resumen de cuánto se vendió en los
+  últimos 15 días (quincenal) y en el mes (mensual) — un total en pesos y/o
+  en unidades por período, no solo el detalle movimiento por movimiento que
+  hay hoy.
+- **Poder eliminar productos que ya no se venden**, aunque tengan historial
+  de movimientos. Hoy `DELETE /api/products/:id` rechaza el borrado si el
+  producto tiene movimientos asociados (ver sección "Endpoints disponibles"
+  más arriba), precisamente para no romper la regla central del proyecto de
+  nunca perder un registro de inventario. Habría que diseñar algo distinto a
+  un borrado real — por ejemplo "archivar" o "descontinuar" un producto (que
+  deje de aparecer para vender pero conserve su historial intacto) — en vez
+  de simplemente destrabar el `DELETE` actual.
