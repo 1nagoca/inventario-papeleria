@@ -54,18 +54,29 @@ export async function crearEntrada(req: Request, res: Response) {
   res.status(201).json(resultado);
 }
 
+const TAMANO_PAGINA_DEFECTO = 30;
+
 const listarMovimientosQuerySchema = z.object({
   tipo: z.enum(["VENTA", "ENTRADA"]).optional(),
   productoId: z.coerce.number().int().positive().optional(),
+  // Cursor de paginación: trae movimientos anteriores a esta fecha (el más
+  // antiguo de la página ya cargada), para el botón "Ver más antiguos".
+  antesDe: z.coerce.date().optional(),
+  limite: z.coerce.number().int().positive().max(200).optional(),
 });
 
 export async function listarMovimientos(req: Request, res: Response) {
-  const { tipo, productoId } = listarMovimientosQuerySchema.parse(req.query);
+  const { tipo, productoId, antesDe, limite } = listarMovimientosQuerySchema.parse(req.query);
 
   const movimientos = await prisma.movimiento.findMany({
-    where: { tipo, productoId },
+    where: {
+      tipo,
+      productoId,
+      ...(antesDe !== undefined ? { fecha: { lt: antesDe } } : {}),
+    },
     orderBy: { fecha: "desc" },
     include: { producto: { select: { nombre: true } } },
+    take: limite ?? TAMANO_PAGINA_DEFECTO,
   });
 
   res.json(movimientos);

@@ -1,9 +1,20 @@
 import { apiFetch } from "./client";
 import type { MovimientoConProducto, ResumenVentas, TipoMovimiento } from "../types/movimiento";
 
-export function getMovements(tipo?: TipoMovimiento): Promise<MovimientoConProducto[]> {
-  const query = tipo ? `?tipo=${tipo}` : "";
-  return apiFetch<MovimientoConProducto[]>(`/movements${query}`);
+interface OpcionesMovimientos {
+  tipo?: TipoMovimiento;
+  /** Cursor: trae movimientos anteriores a esta fecha (para "Ver más antiguos"). */
+  antesDe?: string;
+  limite?: number;
+}
+
+export function getMovements(opciones: OpcionesMovimientos = {}): Promise<MovimientoConProducto[]> {
+  const params = new URLSearchParams();
+  if (opciones.tipo) params.set("tipo", opciones.tipo);
+  if (opciones.antesDe) params.set("antesDe", opciones.antesDe);
+  if (opciones.limite !== undefined) params.set("limite", String(opciones.limite));
+  const query = params.toString();
+  return apiFetch<MovimientoConProducto[]>(`/movements${query ? `?${query}` : ""}`);
 }
 
 export function getResumenVentas(): Promise<ResumenVentas> {
