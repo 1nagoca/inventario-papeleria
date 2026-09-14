@@ -73,3 +73,52 @@
   font-weight: 700;
   font-size: 1.3rem;
 }
+
+.movimiento-card--cancelado {
+  opacity: 0.65;
+}
+
+.movimiento-card__anulada {
+  margin: 0.6rem 0 0;
+  color: var(--color-coral);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.movimiento-card__boton-anular {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.75rem;
+  border: none;
+  background: none;
+  color: var(--color-coral);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.movimiento-card__confirmar {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.movimiento-card__pregunta {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.movimiento-card__acciones {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.movimiento-card__acciones .boton {
+  width: auto;
+  flex: 1;
+  min-height: 48px;
+  font-size: 0.95rem;
+}

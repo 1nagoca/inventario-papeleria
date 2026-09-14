@@ -1,0 +1,43 @@
+.resumen-ventas-periodo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen-ventas-periodo__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--color-paper-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+}
+
+.resumen-ventas-periodo__titulo {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.resumen-ventas-periodo__monto {
+  margin: 0;
+  font-family: var(--font-numeros);
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--color-ink);
+}
+
+.resumen-ventas-periodo__detalle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 420px) {
+  .resumen-ventas-periodo__monto {
+    font-size: 1.15rem;
+  }
+}

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "../db/prisma";
 import {
   ProductoNoEncontradoError,
+  anularVenta,
+  obtenerResumenVentas,
   registrarEntrada,
   registrarVenta,
 } from "../services/movimientos.service";
@@ -67,4 +69,17 @@ export async function listarMovimientos(req: Request, res: Response) {
   });
 
   res.json(movimientos);
+}
+
+export async function obtenerResumen(_req: Request, res: Response) {
+  const resumen = await obtenerResumenVentas();
+  res.json(resumen);
+}
+
+const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
+export async function anularVentaController(req: Request, res: Response) {
+  const { id } = idParamSchema.parse(req.params);
+  const resultado = await anularVenta(id);
+  res.json(resultado);
 }

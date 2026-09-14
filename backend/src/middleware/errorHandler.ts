@@ -3,6 +3,9 @@ import { ZodError } from "zod";
 import { Prisma } from "../generated/prisma/client";
 import {
   CantidadInvalidaError,
+  MovimientoNoEncontradoError,
+  MovimientoNoEsVentaError,
+  MovimientoYaCanceladoError,
   ProductoNoEncontradoError,
   StockInsuficienteError,
 } from "../services/movimientos.service";
@@ -34,6 +37,14 @@ export function errorHandler(
 
   if (err instanceof CantidadInvalidaError) {
     return res.status(400).json({ error: err.message });
+  }
+
+  if (err instanceof MovimientoNoEncontradoError) {
+    return res.status(404).json({ error: err.message });
+  }
+
+  if (err instanceof MovimientoNoEsVentaError || err instanceof MovimientoYaCanceladoError) {
+    return res.status(409).json({ error: err.message });
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {

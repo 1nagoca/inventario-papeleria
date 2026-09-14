@@ -37,6 +37,7 @@ model Movimiento {
   cantidad       Int
   precioUnitario Int            @map("precio_unitario")
   total          Int
+  cancelado      Boolean        @default(false)
   fecha          DateTime       @default(now())
   createdAt      DateTime       @default(now()) @map("created_at")
 

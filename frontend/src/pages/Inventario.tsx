@@ -26,7 +26,7 @@ export function Inventario() {
     setEstado({ tipo: "cargando" });
     Promise.all([getProducts(), getMovements("VENTA")])
       .then(([productos, ventas]) => {
-        const ventasHoy = ventas.filter((v) => esHoy(v.fecha)).length;
+        const ventasHoy = ventas.filter((v) => esHoy(v.fecha) && !v.cancelado).length;
         setEstado({ tipo: "listo", productos, ventasHoy });
       })
       .catch(() =>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getMovements } from "../api/movements";
+import { getMovements, getResumenVentas } from "../api/movements";
 import { MovimientoCard } from "../components/MovimientoCard";
-import type { MovimientoConProducto, TipoMovimiento } from "../types/movimiento";
+import { ResumenVentasPeriodo } from "../components/ResumenVentasPeriodo";
+import type { MovimientoConProducto, ResumenVentas, TipoMovimiento } from "../types/movimiento";
 import "./Historial.css";
 
 type Filtro = "TODOS" | TipoMovimiento;
@@ -15,7 +16,7 @@ const FILTROS: { valor: Filtro; etiqueta: string }[] = [
 type Estado =
   | { tipo: "cargando" }
   | { tipo: "error" }
-  | { tipo: "listo"; movimientos: MovimientoConProducto[] };
+  | { tipo: "listo"; movimientos: MovimientoConProducto[]; resumen: ResumenVentas };
 
 export function Historial() {
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
@@ -27,8 +28,8 @@ export function Historial() {
 
   function cargar(f: Filtro) {
     setEstado({ tipo: "cargando" });
-    getMovements(f === "TODOS" ? undefined : f)
-      .then((movimientos) => setEstado({ tipo: "listo", movimientos }))
+    Promise.all([getMovements(f === "TODOS" ? undefined : f), getResumenVentas()])
+      .then(([movimientos, resumen]) => setEstado({ tipo: "listo", movimientos, resumen }))
       .catch(() => setEstado({ tipo: "error" }));
   }
 
@@ -36,6 +37,8 @@ export function Historial() {
     <>
       <h1 className="page-titulo">Historial</h1>
       <p className="page-subtitulo">Estos son los movimientos del inventario.</p>
+
+      {estado.tipo === "listo" && <ResumenVentasPeriodo resumen={estado.resumen} />}
 
       <div className="filtro-historial" role="group" aria-label="Filtrar movimientos">
         {FILTROS.map((f) => (
@@ -74,7 +77,7 @@ export function Historial() {
       {estado.tipo === "listo" && estado.movimientos.length > 0 && (
         <ul style={{ margin: 0, padding: 0 }}>
           {estado.movimientos.map((m) => (
-            <MovimientoCard key={m.id} movimiento={m} />
+            <MovimientoCard key={m.id} movimiento={m} onAnulado={() => cargar(filtro)} />
           ))}
         </ul>
       )}
