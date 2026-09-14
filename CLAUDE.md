@@ -55,14 +55,26 @@ correspondiente en `Movimiento`.**
 - Toda validación (cantidades positivas, producto existente, stock
   suficiente, precios válidos) se hace **en el backend**, sin confiar
   únicamente en lo que valide el frontend.
+- **Anular una venta nunca borra el `Movimiento`.** Una venta registrada por
+  error se anula (`anularVenta` en `movimientos.service.ts`,
+  `POST /api/movements/:id/anular`), no se elimina: el registro se marca
+  `cancelado = true` y las unidades vuelven al stock, dentro de la misma
+  transacción Prisma. Ninguna ruta, controlador o script debe borrar filas de
+  `Movimiento` ni tocar `stock` para "deshacer" una venta fuera de esa
+  función. Solo aplica a ventas (no a entradas) y no se puede anular una
+  venta ya anulada. Las ventas anuladas se excluyen de los totales
+  (`obtenerResumenVentas`) pero siguen visibles en el Historial — nunca se
+  pierde el registro de que existieron.
 
 ## Arquitectura (fijada, no renegociar sin motivo fuerte)
 
 ```
-Frontend (React + Vite + TS)  <-- REST/JSON -->  Backend (Express + TS)  <-->  SQLite (Prisma)
+Frontend (React + Vite + TS)  <-- REST/JSON -->  Backend (Express + TS)  <-->  PostgreSQL (Supabase, vía Prisma)
 ```
 
-- **Backend**: Node.js + TypeScript + Express + Prisma + SQLite.
+- **Backend**: Node.js + TypeScript + Express + Prisma + PostgreSQL (Supabase).
+  Migrado de SQLite el 2026-09-13 porque el disco de Render (plan gratis) es
+  efímero — ver README, sección "Despliegue en producción", para el detalle.
 - **Frontend**: React + Vite + TypeScript.
 - **Comunicación exclusivamente vía API REST/JSON.** El frontend no conoce
   Prisma ni la base de datos; solo hace `fetch`/`axios` contra `/api/...`.
@@ -75,9 +87,8 @@ Frontend (React + Vite + TS)  <-- REST/JSON -->  Backend (Express + TS)  <-->  S
 - **No implementar todavía** la integración real con WhatsApp ni
   transcripción de audio — solo mantener la arquitectura desacoplada para que
   sea posible después.
-- La base de datos SQLite (`backend/prisma/dev.db`) es un archivo local; el
-  esquema y las migraciones de Prisma sí se versionan en git, el archivo
-  `.db` no.
+- La base de datos vive en Supabase (Postgres gestionado), no en un archivo
+  local; el esquema y las migraciones de Prisma sí se versionan en git.
 
 ## Convenciones de desarrollo
 
