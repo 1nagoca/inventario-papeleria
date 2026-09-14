@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "../api/products";
+import { ApiError } from "../api/client";
+import { actualizarProducto, getProducts } from "../api/products";
 import { ProductoAdminCard } from "../components/ProductoAdminCard";
 import { ProductoCrearForm } from "../components/ProductoCrearForm";
 import { ProductoEditarForm } from "../components/ProductoEditarForm";
-import { ProductoEliminarConfirm } from "../components/ProductoEliminarConfirm";
 import type { Product } from "../types/product";
 
-type Accion = { tipo: "editar" | "eliminar"; productoId: number } | null;
+type Accion = { productoId: number } | null;
 
 type Estado =
   | { tipo: "cargando" }
@@ -17,6 +17,7 @@ export function Productos() {
   const [estado, setEstado] = useState<Estado>({ tipo: "cargando" });
   const [mostrarCrear, setMostrarCrear] = useState(false);
   const [accion, setAccion] = useState<Accion>(null);
+  const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
   useEffect(() => {
     cargar();
@@ -24,7 +25,7 @@ export function Productos() {
 
   function cargar() {
     setEstado({ tipo: "cargando" });
-    getProducts()
+    getProducts({ incluirDescontinuados: true })
       .then((productos) => setEstado({ tipo: "listo", productos }))
       .catch(() => setEstado({ tipo: "error" }));
   }
@@ -35,10 +36,22 @@ export function Productos() {
     cargar();
   }
 
+  async function cambiarDescontinuado(producto: Product) {
+    setErrorAccion(null);
+    try {
+      await actualizarProducto(producto.id, { descontinuado: !producto.descontinuado });
+      cargar();
+    } catch (e) {
+      setErrorAccion(e instanceof ApiError ? e.message : "No se pudo actualizar el producto.");
+    }
+  }
+
   return (
     <>
       <h1 className="page-titulo">Productos</h1>
-      <p className="page-subtitulo">Agrega, edita o elimina los productos de tu papelería.</p>
+      <p className="page-subtitulo">
+        Agrega, edita o descontinúa los productos de tu papelería.
+      </p>
 
       {!mostrarCrear && (
         <button
@@ -69,10 +82,16 @@ export function Productos() {
         </div>
       )}
 
+      {errorAccion && (
+        <div className="mensaje-error" role="alert">
+          {errorAccion}
+        </div>
+      )}
+
       {estado.tipo === "listo" && (
         <ul style={{ margin: 0, padding: 0 }}>
           {estado.productos.map((producto) => {
-            if (accion?.productoId === producto.id && accion.tipo === "editar") {
+            if (accion?.productoId === producto.id) {
               return (
                 <ProductoEditarForm
                   key={producto.id}
@@ -83,29 +102,15 @@ export function Productos() {
               );
             }
 
-            if (accion?.productoId === producto.id && accion.tipo === "eliminar") {
-              return (
-                <ProductoEliminarConfirm
-                  key={producto.id}
-                  producto={producto}
-                  onCancelar={() => setAccion(null)}
-                  onEliminado={alTerminarAccion}
-                />
-              );
-            }
-
             return (
               <ProductoAdminCard
                 key={producto.id}
                 producto={producto}
                 onEditar={() => {
                   setMostrarCrear(false);
-                  setAccion({ tipo: "editar", productoId: producto.id });
+                  setAccion({ productoId: producto.id });
                 }}
-                onEliminar={() => {
-                  setMostrarCrear(false);
-                  setAccion({ tipo: "eliminar", productoId: producto.id });
-                }}
+                onCambiarDescontinuado={() => cambiarDescontinuado(producto)}
               />
             );
           })}

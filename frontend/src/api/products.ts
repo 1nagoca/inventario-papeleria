@@ -1,8 +1,9 @@
 import { apiFetch } from "./client";
 import type { Product } from "../types/product";
 
-export function getProducts(): Promise<Product[]> {
-  return apiFetch<Product[]>("/products");
+export function getProducts(opciones: { incluirDescontinuados?: boolean } = {}): Promise<Product[]> {
+  const query = opciones.incluirDescontinuados ? "?incluirDescontinuados=true" : "";
+  return apiFetch<Product[]>(`/products${query}`);
 }
 
 export interface CrearProductoInput {
@@ -23,6 +24,7 @@ export interface ActualizarProductoInput {
   nombre?: string;
   precio?: number;
   stockMinimo?: number;
+  descontinuado?: boolean;
 }
 
 export function actualizarProducto(id: number, input: ActualizarProductoInput): Promise<Product> {
@@ -32,6 +34,3 @@ export function actualizarProducto(id: number, input: ActualizarProductoInput): 
   });
 }
 
-export function eliminarProducto(id: number): Promise<void> {
-  return apiFetch<void>(`/products/${id}`, { method: "DELETE" });
-}

@@ -6,6 +6,7 @@ import {
   MovimientoNoEncontradoError,
   MovimientoNoEsVentaError,
   MovimientoYaCanceladoError,
+  ProductoDescontinuadoError,
   ProductoNoEncontradoError,
   StockInsuficienteError,
 } from "../services/movimientos.service";
@@ -44,6 +45,10 @@ export function errorHandler(
   }
 
   if (err instanceof MovimientoNoEsVentaError || err instanceof MovimientoYaCanceladoError) {
+    return res.status(409).json({ error: err.message });
+  }
+
+  if (err instanceof ProductoDescontinuadoError) {
     return res.status(409).json({ error: err.message });
   }
 

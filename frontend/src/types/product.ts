@@ -4,6 +4,7 @@ export interface Product {
   precio: number;
   stock: number;
   stockMinimo: number;
+  descontinuado: boolean;
   createdAt: string;
   updatedAt: string;
 }

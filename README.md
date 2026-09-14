@@ -73,9 +73,9 @@ responde `401`.
 GET    /api/health
 GET    /api/auth/verify       (revisa si la clave enviada es correcta)
 
-GET    /api/products
+GET    /api/products          (?incluirDescontinuados=true para verlos todos)
 POST   /api/products
-PUT    /api/products/:id      (nombre, precio, stockMinimo — nunca stock)
+PUT    /api/products/:id      (nombre, precio, stockMinimo, descontinuado — nunca stock)
 DELETE /api/products/:id      (rechazado si el producto tiene movimientos)
 
 POST   /api/sales               { productoId | producto, cantidad }
@@ -113,11 +113,12 @@ El plan de trabajo sigue el orden de fases definido en
   - Ronda manual de casos límite sobre la API (cantidades inválidas, producto duplicado, edición de `stock` bloqueada, eliminación de producto con historial, filtros inválidos) y sobre la interfaz (producto agotado deshabilitado en el selector de venta).
   - Bug encontrado y corregido: cuando una petición tenía un campo no reconocido, la API respondía `{"error":"Datos inválidos.","detalles":{}}` sin explicar el problema (zod no incluía los errores "de forma" en `fieldErrors`). Corregido en `backend/src/middleware/errorHandler.ts`.
   - ⚠️ **Estado actual de `npm test` (backend):** roto desde la migración a PostgreSQL. `backend/tests/globalSetup.ts` sigue apuntando `DATABASE_URL` a un archivo SQLite (`file:./test.db`) para aislar los datos de prueba, pero `backend/prisma/schema.prisma` ahora fija el `datasource` a `provider = "postgresql"`, así que `prisma migrate deploy` falla con `P1013` antes de correr ninguna prueba. Las pruebas en sí (`backend/tests/movimientos.service.test.ts`) no cambiaron y siguen siendo válidas — falta darle al harness una base Postgres de pruebas aislada (no la misma de Supabase que usa producción, para no arrastrar/borrar datos reales con los `deleteMany()` de `beforeEach`).
-- ✅ Sección "Productos" (agregar/editar/eliminar desde la interfaz) — pantalla con lista de productos, formulario para crear producto nuevo (nombre, precio, cantidad inicial, stock mínimo), edición inline (nombre, precio, stock mínimo — nunca `stock`) y confirmación inline antes de eliminar. No es una fase numerada del enunciado, pero es uno de los requisitos originales y una de las 5 pantallas fijadas en `CLAUDE.md`.
+- ✅ Sección "Productos" (agregar/editar/descontinuar desde la interfaz) — pantalla con lista de productos, formulario para crear producto nuevo (nombre, precio, cantidad inicial, stock mínimo) y edición inline (nombre, precio, stock mínimo — nunca `stock`). No es una fase numerada del enunciado, pero es uno de los requisitos originales y una de las 5 pantallas fijadas en `CLAUDE.md`.
 - ✅ **Protección con clave compartida** (2026-09-13) — todas las rutas de `/api` salvo `/api/health` requieren el header `x-app-password` con el valor de `APP_PASSWORD` (middleware `backend/src/middleware/requireAppPassword.ts`). El frontend pide la clave una sola vez por navegador (componente `AccesoGate`, `GET /api/auth/verify` para validarla) y la guarda en `localStorage`. Se agregó porque tanto el sitio público en Netlify como la API en Render quedaban abiertos a cualquiera con el link.
 - ✅ **Totales de venta por período** en Historial — resumen de "Últimos 15 días" (ventana móvil) y "Este mes" (mes de calendario en curso), en pesos y en unidades, calculado en `backend/src/services/movimientos.service.ts` (`obtenerResumenVentas`) vía `GET /api/movements/resumen` y mostrado arriba de la lista de movimientos (`ResumenVentasPeriodo`).
 - ✅ **Anular una venta** desde Historial — no borra el movimiento (regla del proyecto: nunca perder un registro de inventario), lo marca `cancelado` y devuelve las unidades al stock, en una sola transacción (`anularVenta` en `movimientos.service.ts`, `POST /api/movements/:id/anular`). Solo aplica a ventas y no se puede anular dos veces; una venta cancelada sigue visible en el historial (marcada) pero deja de contar en los totales por período y en "ventas hoy" del Dashboard. Botón "Anular esta venta" con confirmación inline en cada tarjeta de venta.
 - ✅ **Paginación del Historial** — `GET /api/movements` trae como mucho 15 movimientos por página en vez de la lista completa (para que no se vuelva eterna a medida que se registran más ventas). Botón "Ver más antiguos" al final de la lista para pedir la siguiente página con el cursor `antesDe`.
+- ✅ **Descontinuar un producto** — en vez de destrabar el `DELETE` real (que sigue rechazado si el producto tiene movimientos, para no romper la regla de nunca perder un registro), la pantalla "Productos" tiene un botón "Descontinuar" que marca el producto (`descontinuado = true`) sin borrar nada: deja de aparecer en Vender, Agregar y en el Dashboard, y el backend rechaza registrarle ventas o entradas (`ProductoDescontinuadoError`), pero conserva su stock e historial intactos. `GET /api/products` excluye los descontinuados por defecto — la pantalla "Productos" pide `?incluirDescontinuados=true` para poder verlos (marcados) y ofrecer "Reactivar".
 
 El MVP definido en `inventario_papeleria_prompt.md` está completo: las 5 pantallas (Inicio/Dashboard, Vender, Agregar, Historial, Productos) funcionan de punta a punta sobre la API REST, con la regla de negocio de stock/movimientos protegida por pruebas automatizadas (ver nota sobre `npm test` arriba).
 
@@ -196,17 +197,3 @@ resuelve la pérdida de datos, pero no ese problema; el bot sigue pausado
 hasta contar con un host que no se duerma (VM propia, plan pago de Render,
 etc.).
 
-## Ideas para el futuro
-
-Pedidas por Camilo el 2026-09-13, no implementadas todavía — quedan aquí
-anotadas para retomarlas más adelante, no son parte del MVP actual.
-("Totales de venta por período" ya se implementó — ver "Estado actual".)
-
-- **Poder eliminar productos que ya no se venden**, aunque tengan historial
-  de movimientos. Hoy `DELETE /api/products/:id` rechaza el borrado si el
-  producto tiene movimientos asociados (ver sección "Endpoints disponibles"
-  más arriba), precisamente para no romper la regla central del proyecto de
-  nunca perder un registro de inventario. Habría que diseñar algo distinto a
-  un borrado real — por ejemplo "archivar" o "descontinuar" un producto (que
-  deje de aparecer para vender pero conserve su historial intacto) — en vez
-  de simplemente destrabar el `DELETE` actual.

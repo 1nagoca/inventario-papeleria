@@ -8,17 +8,25 @@ import "./ProductoAdminCard.css";
 interface Props {
   producto: Product;
   onEditar: () => void;
-  onEliminar: () => void;
+  onCambiarDescontinuado: () => void;
 }
 
-export function ProductoAdminCard({ producto, onEditar, onEliminar }: Props) {
+export function ProductoAdminCard({ producto, onEditar, onCambiarDescontinuado }: Props) {
   const estado = calcularEstado(producto);
 
   return (
-    <li className={`product-card product-card--${estado}`}>
+    <li
+      className={`product-card product-card--${estado}${
+        producto.descontinuado ? " product-card--descontinuado" : ""
+      }`}
+    >
       <div className="product-card__encabezado">
         <span className="product-card__nombre">{producto.nombre}</span>
-        <EstadoBadge estado={estado} />
+        {producto.descontinuado ? (
+          <span className="producto-admin-card__etiqueta-descontinuado">Descontinuado</span>
+        ) : (
+          <EstadoBadge estado={estado} />
+        )}
       </div>
       <div className="product-card__datos">
         <div className="product-card__dato">
@@ -38,8 +46,12 @@ export function ProductoAdminCard({ producto, onEditar, onEliminar }: Props) {
         <button type="button" className="boton boton--secundario" onClick={onEditar}>
           Editar
         </button>
-        <button type="button" className="boton boton--peligro" onClick={onEliminar}>
-          Eliminar
+        <button
+          type="button"
+          className={`boton ${producto.descontinuado ? "boton--secundario" : "boton--peligro"}`}
+          onClick={onCambiarDescontinuado}
+        >
+          {producto.descontinuado ? "Reactivar" : "Descontinuar"}
         </button>
       </div>
     </li>

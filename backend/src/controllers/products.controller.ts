@@ -37,6 +37,7 @@ const actualizarProductoSchema = z
       .int("El stock mínimo debe ser un número entero.")
       .positive("El stock mínimo debe ser mayor a 0.")
       .optional(),
+    descontinuado: z.boolean().optional(),
   })
   .strict();
 
@@ -44,8 +45,19 @@ const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-export async function listarProductos(_req: Request, res: Response) {
-  const productos = await prisma.product.findMany({ orderBy: { nombre: "asc" } });
+const listarProductosQuerySchema = z.object({
+  incluirDescontinuados: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((valor) => valor === "true"),
+});
+
+export async function listarProductos(req: Request, res: Response) {
+  const { incluirDescontinuados } = listarProductosQuerySchema.parse(req.query);
+  const productos = await prisma.product.findMany({
+    where: incluirDescontinuados ? {} : { descontinuado: false },
+    orderBy: { nombre: "asc" },
+  });
   res.json(productos);
 }
 

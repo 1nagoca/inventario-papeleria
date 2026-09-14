@@ -25,6 +25,13 @@ export class CantidadInvalidaError extends Error {
   }
 }
 
+export class ProductoDescontinuadoError extends Error {
+  constructor() {
+    super("Este producto está descontinuado.");
+    this.name = "ProductoDescontinuadoError";
+  }
+}
+
 export class MovimientoNoEncontradoError extends Error {
   constructor() {
     super("Movimiento no encontrado.");
@@ -68,6 +75,9 @@ async function aplicarMovimiento(
     const producto = await tx.product.findUnique({ where: { id: productoId } });
     if (!producto) {
       throw new ProductoNoEncontradoError();
+    }
+    if (producto.descontinuado) {
+      throw new ProductoDescontinuadoError();
     }
 
     if (tipo === TipoMovimiento.VENTA && producto.stock < cantidad) {

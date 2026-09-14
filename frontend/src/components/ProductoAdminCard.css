@@ -10,3 +10,14 @@
   min-height: 52px;
   font-size: 1rem;
 }
+
+.product-card--descontinuado {
+  opacity: 0.65;
+}
+
+.producto-admin-card__etiqueta-descontinuado {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-coral);
+  white-space: nowrap;
+}

@@ -65,6 +65,17 @@ correspondiente en `Movimiento`.**
   venta ya anulada. Las ventas anuladas se excluyen de los totales
   (`obtenerResumenVentas`) pero siguen visibles en el Historial — nunca se
   pierde el registro de que existieron.
+- **Un producto con movimientos nunca se borra: se descontinúa.**
+  `DELETE /api/products/:id` sigue rechazando el borrado si el producto tiene
+  movimientos (misma razón: no perder nunca un registro de inventario). La
+  forma de "sacar de circulación" un producto con historial es marcarlo
+  `descontinuado = true` (mismo `PUT /api/products/:id` que edita nombre/
+  precio/stockMinimo — no toca `stock`, así que no necesita pasar por la capa
+  de servicios). Un producto descontinuado: no aparece en `GET /api/products`
+  por defecto (hay que pedir `?incluirDescontinuados=true`), y
+  `registrarVenta`/`registrarEntrada` lo rechazan (`ProductoDescontinuadoError`)
+  aunque se lo invoque directo. Se puede reactivar (`descontinuado = false`)
+  en cualquier momento sin perder stock ni historial.
 
 ## Arquitectura (fijada, no renegociar sin motivo fuerte)
 
