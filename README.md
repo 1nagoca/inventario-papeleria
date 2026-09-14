@@ -197,3 +197,37 @@ resuelve la pérdida de datos, pero no ese problema; el bot sigue pausado
 hasta contar con un host que no se duerma (VM propia, plan pago de Render,
 etc.).
 
+## Ideas para el futuro
+
+Pedidas por Camilo el 2026-09-14, no implementadas todavía — quedan aquí
+anotadas para retomarlas más adelante, no son parte del MVP actual.
+
+- **Elegir el período de los totales de venta (con calendario).** Hoy
+  `GET /api/movements/resumen` solo calcula dos ventanas fijas: "Últimos 15
+  días" (rolling, desde hoy hacia atrás) y "Este mes" (mes de calendario en
+  curso) — no hay forma de pedir un período distinto. La idea es poder
+  elegir el mes (ej. ver los totales de septiembre o de agosto, no solo el
+  mes actual) y también poder elegir cuáles 15 días (no solo los últimos 15
+  desde hoy), con algo tipo selector de mes / calendario en la interfaz.
+  Habría que generalizar `obtenerResumenVentas` para aceptar un rango de
+  fechas (`desde`/`hasta`) en vez de tener las dos ventanas fijas
+  hardcodeadas, y agregar en el Historial un control para elegir mes o rango
+  de fechas.
+- **Ganancia por producto (costo de compra vs. precio de venta).** Hoy
+  `Product` solo guarda `precio` (precio de venta) — no hay ningún campo
+  para lo que costó comprar/producir ese producto, así que la app no puede
+  calcular cuánto se gana. Ejemplo de Camilo: se compra una caja de 20
+  borradores por $50.000 (o sea, $2.500 la unidad) y cada borrador se vende
+  a $500 — la idea es guardar ese costo unitario de compra en cada producto
+  para poder mostrar la ganancia (precio de venta − costo) por unidad, por
+  venta y, idealmente, totalizada por período (conectando con el punto
+  anterior). Nota: con los números exactos del ejemplo la cuenta da negativa
+  ($500 − $2.500), probablemente los números reales que Camilo tiene en
+  mente son otros — lo importante es la idea, no el ejemplo. Punto a decidir
+  antes de implementar: el costo puede cambiar entre una compra (entrada) y
+  la siguiente (ej. el próximo lote de borradores puede costar distinto) —
+  habría que definir si se guarda un solo costo unitario "actual" por
+  producto (simple, se actualiza al registrar una entrada) o un costo por
+  lote/entrada (más preciso pero más complejo, ej. costo promedio
+  ponderado).
+
