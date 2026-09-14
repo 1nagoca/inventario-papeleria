@@ -80,12 +80,12 @@ DELETE /api/products/:id      (rechazado si el producto tiene movimientos)
 
 POST   /api/sales               { productoId | producto, cantidad }
 POST   /api/entries             { productoId | producto, cantidad }
-GET    /api/movements           (?tipo=VENTA|ENTRADA&productoId=&antesDe=&limite=, máx. 30 por página)
+GET    /api/movements           (?tipo=VENTA|ENTRADA&productoId=&antesDe=&limite=, máx. 15 por página)
 GET    /api/movements/resumen   (totales de venta: últimos 15 días y mes actual — pesos y unidades)
 POST   /api/movements/:id/anular  (solo ventas; no se puede anular dos veces)
 ```
 
-`GET /api/movements` trae como mucho 30 movimientos por página (30 si no se
+`GET /api/movements` trae como mucho 15 movimientos por página (15 si no se
 pasa `limite`, hasta 200 si se pide más). Para pedir los siguientes más
 antiguos, se manda `antesDe` con la fecha del último movimiento ya recibido
 — así funciona el botón "Ver más antiguos" del Historial.
@@ -117,7 +117,7 @@ El plan de trabajo sigue el orden de fases definido en
 - ✅ **Protección con clave compartida** (2026-09-13) — todas las rutas de `/api` salvo `/api/health` requieren el header `x-app-password` con el valor de `APP_PASSWORD` (middleware `backend/src/middleware/requireAppPassword.ts`). El frontend pide la clave una sola vez por navegador (componente `AccesoGate`, `GET /api/auth/verify` para validarla) y la guarda en `localStorage`. Se agregó porque tanto el sitio público en Netlify como la API en Render quedaban abiertos a cualquiera con el link.
 - ✅ **Totales de venta por período** en Historial — resumen de "Últimos 15 días" (ventana móvil) y "Este mes" (mes de calendario en curso), en pesos y en unidades, calculado en `backend/src/services/movimientos.service.ts` (`obtenerResumenVentas`) vía `GET /api/movements/resumen` y mostrado arriba de la lista de movimientos (`ResumenVentasPeriodo`).
 - ✅ **Anular una venta** desde Historial — no borra el movimiento (regla del proyecto: nunca perder un registro de inventario), lo marca `cancelado` y devuelve las unidades al stock, en una sola transacción (`anularVenta` en `movimientos.service.ts`, `POST /api/movements/:id/anular`). Solo aplica a ventas y no se puede anular dos veces; una venta cancelada sigue visible en el historial (marcada) pero deja de contar en los totales por período y en "ventas hoy" del Dashboard. Botón "Anular esta venta" con confirmación inline en cada tarjeta de venta.
-- ✅ **Paginación del Historial** — `GET /api/movements` trae como mucho 30 movimientos por página en vez de la lista completa (para que no se vuelva eterna a medida que se registran más ventas). Botón "Ver más antiguos" al final de la lista para pedir la siguiente página con el cursor `antesDe`.
+- ✅ **Paginación del Historial** — `GET /api/movements` trae como mucho 15 movimientos por página en vez de la lista completa (para que no se vuelva eterna a medida que se registran más ventas). Botón "Ver más antiguos" al final de la lista para pedir la siguiente página con el cursor `antesDe`.
 
 El MVP definido en `inventario_papeleria_prompt.md` está completo: las 5 pantallas (Inicio/Dashboard, Vender, Agregar, Historial, Productos) funcionan de punta a punta sobre la API REST, con la regla de negocio de stock/movimientos protegida por pruebas automatizadas (ver nota sobre `npm test` arriba).
 

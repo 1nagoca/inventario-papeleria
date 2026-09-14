@@ -54,7 +54,7 @@ export async function crearEntrada(req: Request, res: Response) {
   res.status(201).json(resultado);
 }
 
-const TAMANO_PAGINA_DEFECTO = 30;
+const TAMANO_PAGINA_DEFECTO = 15;
 
 const listarMovimientosQuerySchema = z.object({
   tipo: z.enum(["VENTA", "ENTRADA"]).optional(),

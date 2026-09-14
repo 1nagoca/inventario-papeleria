@@ -15,7 +15,7 @@ const FILTROS: { valor: Filtro; etiqueta: string }[] = [
 
 // El backend trae como mucho esta cantidad por página. Si una página llega
 // completa, asumimos que puede haber más y mostramos "Ver más antiguos".
-const TAMANO_PAGINA = 30;
+const TAMANO_PAGINA = 15;
 
 type Estado =
   | { tipo: "cargando" }
