@@ -7,13 +7,17 @@
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && prisma migrate deploy && tsc",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "bot:simular": "tsx scripts/simular-bot.ts",
+    "bot:simular-webhook": "tsx scripts/simular-webhook.ts",
+    "test": "vitest run",
+    "test:bot": "vitest run --config vitest.bot.config.mts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",

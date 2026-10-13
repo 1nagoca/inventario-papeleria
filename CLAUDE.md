@@ -91,15 +91,52 @@ Frontend (React + Vite + TS)  <-- REST/JSON -->  Backend (Express + TS)  <-->  P
   Prisma ni la base de datos; solo hace `fetch`/`axios` contra `/api/...`.
 - **Capa de servicios reutilizable**: la lógica de negocio (`services/`) debe
   ser invocable directamente desde código (no solo a través de un
-  controlador HTTP). Esto es lo que deja el proyecto **preparado para la
-  futura integración con WhatsApp**: un webhook podrá llamar a
-  `ventasService.registrarVenta()` reutilizando exactamente la misma lógica
+  controlador HTTP). Así funciona el bot de WhatsApp: su webhook llama a
+  `registrarVenta()` de `movimientos.service.ts`, exactamente la misma lógica
   que usa la API REST, sin duplicarla.
-- **No implementar todavía** la integración real con WhatsApp ni
-  transcripción de audio — solo mantener la arquitectura desacoplada para que
-  sea posible después.
 - La base de datos vive en Supabase (Postgres gestionado), no en un archivo
   local; el esquema y las migraciones de Prisma sí se versionan en git.
+
+## Bot de WhatsApp (solo registrar ventas por texto)
+
+Implementado el 2026-10-12. La sección "Futura integración con WhatsApp" de
+`inventario_papeleria_prompt.md` ("NO IMPLEMENTAR TODAVÍA") queda superada por
+esta, solo en lo que aquí se describe.
+
+```
+Meta (WhatsApp Cloud API) --POST--> /api/whatsapp/webhook --> whatsappBot.service --> registrarVenta()
+                                                                   |
+                                                                   +--> interpreteVentas.service (Claude Haiku)
+```
+
+- **Alcance: solo registrar ventas escritas.** Audios, entradas de mercancía,
+  anulaciones y consultas por WhatsApp **no** están implementados — no
+  agregarlos sin que se pidan.
+- **Nunca se registra sin un "sí".** El bot propone ("Voy a registrar: 3
+  Lápiz, 1 Cuaderno. ¿Confirmas? (sí/no)") y solo registra tras una respuesta
+  afirmativa del mismo número, dentro de los 10 minutos siguientes. El "sí" y
+  el "no" se detectan con código, no con IA.
+- **El bot solo modifica inventario a través de `registrarVenta`.** No toca
+  `stock` ni `Movimiento` por otro camino; la regla de negocio estricta de
+  arriba aplica igual.
+- **La IA interpreta, no decide.** `interpreteVentas.service.ts` convierte el
+  texto en `{ productoId, cantidad }`; el bot valida eso contra los productos
+  reales (existencia, descontinuado, stock) antes de proponer nada.
+- **El webhook no usa `requireAppPassword`** (Meta no tiene la clave). Lo
+  protegen: el token de verificación (GET), la firma `X-Hub-Signature-256` de
+  cada POST (`middleware/verificarFirmaMeta.ts`) y la lista de números
+  autorizados. Un número no autorizado se ignora sin responder y sin llamar a
+  la IA. La ruta se monta **antes** de `express.json()` porque la firma se
+  calcula sobre el cuerpo crudo — no mover ese orden en `index.ts`.
+- **Claves solo en variables de entorno** (`WHATSAPP_VERIFY_TOKEN`,
+  `META_APP_SECRET`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_NUMEROS_AUTORIZADOS`, `ANTHROPIC_API_KEY`). Nunca en el código ni
+  en git (el repositorio es público). Si falta alguna, el webhook rechaza todo.
+- **`whatsappBot.service.ts` no sabe nada de WhatsApp**: recibe texto y
+  devuelve texto. Por eso se puede probar sin Meta (`npm run test:bot`,
+  `npm run bot:simular`, `npm run bot:simular-webhook`). Mantenerlo así.
+- Los mensajes del bot siguen las reglas de UX de arriba: español simple,
+  frases cortas, sin jerga.
 
 ## Convenciones de desarrollo
 

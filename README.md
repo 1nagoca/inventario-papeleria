@@ -18,9 +18,8 @@ Frontend (React + Vite + TS)  <-- REST/JSON -->  Backend (Express + TS)  <-->  P
 - `frontend/` — Interfaz en React + Vite + TypeScript.
 
 Frontend y backend están completamente desacoplados: solo se comunican por
-HTTP/JSON. Esto deja el backend listo para que, más adelante, una integración
-externa (por ejemplo un bot de WhatsApp) pueda usar los mismos endpoints o la
-misma capa de servicios sin tocar el frontend.
+HTTP/JSON. El bot de WhatsApp (ver "Bot de WhatsApp" más abajo) vive dentro
+del backend y usa la misma capa de servicios que la API, sin tocar el frontend.
 
 ## Requisitos
 
@@ -68,6 +67,11 @@ Todas las rutas, excepto `/api/health` y `/api/auth/verify`, requieren el
 header `x-app-password` con el valor de `APP_PASSWORD` — ver "Protección con
 clave compartida" más abajo. Sin ese header (o con uno incorrecto), la API
 responde `401`.
+
+La única otra excepción es `/api/whatsapp/webhook` (`GET` para la
+verificación de Meta, `POST` para recibir mensajes): no usa `APP_PASSWORD`
+porque quien la llama es Meta, y se protege con la firma de Meta y la lista
+de números autorizados — ver "Bot de WhatsApp" más abajo.
 
 ```
 GET    /api/health
@@ -119,6 +123,8 @@ El plan de trabajo sigue el orden de fases definido en
 - ✅ **Anular una venta** desde Historial — no borra el movimiento (regla del proyecto: nunca perder un registro de inventario), lo marca `cancelado` y devuelve las unidades al stock, en una sola transacción (`anularVenta` en `movimientos.service.ts`, `POST /api/movements/:id/anular`). Solo aplica a ventas y no se puede anular dos veces; una venta cancelada sigue visible en el historial (marcada) pero deja de contar en los totales por período y en "ventas hoy" del Dashboard. Botón "Anular esta venta" con confirmación inline en cada tarjeta de venta.
 - ✅ **Paginación del Historial** — `GET /api/movements` trae como mucho 15 movimientos por página en vez de la lista completa (para que no se vuelva eterna a medida que se registran más ventas). Botón "Ver más antiguos" al final de la lista para pedir la siguiente página con el cursor `antesDe`.
 - ✅ **Descontinuar un producto** — en vez de destrabar el `DELETE` real (que sigue rechazado si el producto tiene movimientos, para no romper la regla de nunca perder un registro), la pantalla "Productos" tiene un botón "Descontinuar" que marca el producto (`descontinuado = true`) sin borrar nada: deja de aparecer en Vender, Agregar y en el Dashboard, y el backend rechaza registrarle ventas o entradas (`ProductoDescontinuadoError`), pero conserva su stock e historial intactos. `GET /api/products` excluye los descontinuados por defecto — la pantalla "Productos" pide `?incluirDescontinuados=true` para poder verlos (marcados) y ofrecer "Reactivar".
+
+- ✅ **Bot de WhatsApp para registrar ventas** (2026-10-12) — webhook de la WhatsApp Cloud API de Meta dentro del backend (`/api/whatsapp/webhook`), interpretación del mensaje con Claude Haiku y confirmación obligatoria ("¿Confirmas? (sí/no)") antes de llamar a `registrarVenta`. Solo ventas por texto y solo para números autorizados. Pruebas automáticas propias (`npm run test:bot`, sin base de datos) y dos simuladores para probar sin WhatsApp. Detalle y configuración en la sección "Bot de WhatsApp".
 
 El MVP definido en `inventario_papeleria_prompt.md` está completo: las 5 pantallas (Inicio/Dashboard, Vender, Agregar, Historial, Productos) funcionan de punta a punta sobre la API REST, con la regla de negocio de stock/movimientos protegida por pruebas automatizadas (ver nota sobre `npm test` arriba).
 
@@ -189,13 +195,187 @@ del ciclo de vida del backend).
 - Si el servicio de Render se recrea alguna vez, su URL cambia — hay que
   actualizar `VITE_API_URL` en Netlify y volver a desplegar.
 
-**Nota sobre el bot de WhatsApp:** el plan pausado (Baileys, integración no
-implementada aún) necesita un proceso siempre encendido con una conexión
-WebSocket viva a WhatsApp, algo que el plan gratis de Render no garantiza —
-el servicio se duerme sin tráfico. Mover la base de datos a Supabase
-resuelve la pérdida de datos, pero no ese problema; el bot sigue pausado
-hasta contar con un host que no se duerma (VM propia, plan pago de Render,
-etc.).
+**Nota sobre el bot de WhatsApp:** el plan anterior (Baileys) se descartó
+porque necesitaba un proceso siempre encendido. El bot actual usa la API
+oficial de Meta por webhook, que sí funciona en el plan gratis de Render —
+ver la sección siguiente.
+
+## Bot de WhatsApp
+
+Permite registrar ventas escribiéndole a un número de WhatsApp:
+
+> **Abuela:** hoy vendí 3 lápices y un cuaderno
+> **Bot:** Voy a registrar: 3 Lápiz, 1 Cuaderno. ¿Confirmas? (sí/no)
+> **Abuela:** sí
+> **Bot:** Listo, registré la venta: 3 Lápiz, 1 Cuaderno. Total: $6.500.
+
+**Qué hace y qué no (versión actual):**
+
+- Solo registra **ventas** y solo a partir de **mensajes escritos**. No
+  entiende audios, ni registra entradas de mercancía, ni anula ventas, ni
+  responde consultas. Una venta registrada por error se anula desde la
+  pantalla Historial de la app.
+- **Nunca registra sin un "sí".** Si la respuesta es "no", o pasan más de 10
+  minutos, no se registra nada.
+- Solo atiende a los números de `WHATSAPP_NUMEROS_AUTORIZADOS`. A los demás
+  no les responde.
+- Si un producto no existe, está descontinuado o no hay unidades suficientes,
+  lo dice y no registra nada.
+- La venta queda con la fecha del momento en que se confirma (un "ayer
+  vendí…" se registra con fecha de hoy), y el Historial no distingue si la
+  venta se hizo por WhatsApp o por la app.
+
+**Cómo funciona por dentro:** Meta envía cada mensaje a
+`POST /api/whatsapp/webhook`. El backend comprueba la firma de Meta y que el
+número esté autorizado; Claude Haiku (`claude-haiku-5-5`) convierte el texto
+en productos y cantidades; el backend valida contra el inventario real y
+pregunta; con el "sí" llama a `registrarVenta`, la misma función que usa la
+app. La IA solo interpreta: nunca registra ni decide.
+
+**Costo:** Meta no cobra por responder mensajes que la persona inicia. Claude
+Haiku cuesta fracciones de centavo de dólar por mensaje (centavos al mes con
+el uso de una papelería). Render sigue en el plan gratis.
+
+### Variables de entorno
+
+Van en `backend/.env` para probar en tu computador y en Render (Environment)
+para producción. **Nunca en el código ni en git.** Si falta alguna, el
+webhook rechaza todos los mensajes.
+
+| Variable | Qué es | De dónde sale |
+|---|---|---|
+| `WHATSAPP_VERIFY_TOKEN` | Frase que inventas tú | Te la inventas (paso 6) |
+| `META_APP_SECRET` | Clave con la que Meta firma cada mensaje | Meta, paso 3 |
+| `WHATSAPP_TOKEN` | Permiso para responder mensajes | Meta, paso 4 |
+| `WHATSAPP_PHONE_NUMBER_ID` | Identificador del número del bot (no es el número) | Meta, paso 2 |
+| `WHATSAPP_NUMEROS_AUTORIZADOS` | Números que el bot atiende: código de país + número, sin `+` ni espacios, separados por coma. Ej.: `573001234567,573109876543` | Los celulares de la familia |
+| `ANTHROPIC_API_KEY` | Clave de la API de Claude | Anthropic, paso 5 |
+
+### Probar sin WhatsApp
+
+Todo desde la carpeta `backend/`:
+
+```bash
+npm run test:bot              # pruebas automáticas del bot (sin base de datos ni internet)
+npm run bot:simular           # chat en la terminal; NO registra nada aunque digas "sí"
+npm run bot:simular -- --registrar   # igual, pero SÍ registra ventas de verdad
+npm run bot:simular-webhook   # prueba la seguridad del webhook (firma, números, repetidos)
+```
+
+- `bot:simular` necesita `ANTHROPIC_API_KEY` y `DATABASE_URL` en
+  `backend/.env`: usa la IA real y los productos reales. **Ojo:** si
+  `DATABASE_URL` apunta a la base de producción, con `--registrar` las ventas
+  quedan en el inventario real (se pueden anular desde Historial).
+- `bot:simular-webhook` nunca responde "sí" ni envía nada a WhatsApp.
+
+### Configuración paso a paso (primera vez)
+
+Los nombres de los menús de Meta cambian con frecuencia; si alguno no
+coincide exactamente, busca el que más se le parezca.
+
+**1. Crear la app en Meta**
+
+1. Entra a <https://developers.facebook.com> con tu cuenta de Facebook y
+   acepta registrarte como desarrollador.
+2. "My Apps" → "Create App". Cuando pregunte para qué es, elige la opción
+   relacionada con WhatsApp / "Business". Si te pide un "portafolio
+   comercial" (Business portfolio) y no tienes, créalo ahí mismo con el
+   nombre de la papelería.
+
+**2. Activar WhatsApp y el número de prueba**
+
+1. En el panel de la app, agrega el producto **WhatsApp** y entra a
+   "API Setup" (Configuración de la API).
+2. Meta te da un **número de prueba**. Copia su **Phone number ID** →
+   `WHATSAPP_PHONE_NUMBER_ID`.
+3. En "To" (Para), agrega tu celular como destinatario y confírmalo con el
+   código que te llega por WhatsApp. El número de prueba solo puede hablar
+   con los números agregados ahí (máximo 5).
+
+**3. Copiar el App Secret**
+
+"App settings" → "Basic" → "App Secret" → "Show" → `META_APP_SECRET`.
+
+**4. Crear un token que no venza**
+
+El token que aparece en "API Setup" sirve para una prueba rápida pero vence
+en 24 horas. Para uno permanente:
+
+1. Entra a <https://business.facebook.com/settings> → "Users" → "System
+   users" → "Add". Crea uno con rol de administrador.
+2. "Assign assets": asígnale la app (control total) y la cuenta de WhatsApp.
+3. "Generate token": elige la app, vencimiento "Never", y marca los permisos
+   `whatsapp_business_messaging` y `whatsapp_business_management`.
+4. Copia el token (solo se muestra una vez) → `WHATSAPP_TOKEN`.
+
+**5. Crear la clave de Claude**
+
+1. Entra a <https://console.anthropic.com>, crea una cuenta y en "Billing"
+   carga saldo (el mínimo alcanza para muchísimo tiempo).
+2. "API Keys" → "Create Key" → `ANTHROPIC_API_KEY`.
+
+**6. Poner las variables en Render**
+
+En el servicio del backend → "Environment", agrega las 6 variables de la
+tabla. Para `WHATSAPP_VERIFY_TOKEN` inventa una frase larga cualquiera. En
+`WHATSAPP_NUMEROS_AUTORIZADOS` pon por ahora solo tu celular. Guarda y espera
+a que Render termine de desplegar.
+
+**7. Conectar el webhook**
+
+1. En Meta: WhatsApp → "Configuration" → "Webhook" → "Edit".
+2. **Callback URL:** `https://TU-SERVICIO.onrender.com/api/whatsapp/webhook`
+3. **Verify token:** la misma frase de `WHATSAPP_VERIFY_TOKEN`.
+4. "Verify and save". Si Render estaba dormido puede fallar la primera vez:
+   abre `https://TU-SERVICIO.onrender.com/api/health` en el navegador, espera
+   a que responda y vuelve a intentar.
+5. En "Webhook fields", suscríbete a **`messages`**.
+
+**8. Probar**
+
+Desde tu celular, escríbele al número de prueba: `vendí 1 lápiz`. Debe
+preguntarte si confirmas. Responde `no` para no registrar nada, o `sí` y
+luego anula esa venta desde Historial.
+
+**9. Mantener despierto el servidor (recomendado)**
+
+El plan gratis de Render se duerme tras ~15 minutos sin uso. Los mensajes no
+se pierden (Meta los reintenta), pero la primera respuesta puede tardar uno o
+varios minutos. Para evitarlo, crea una cuenta gratis en
+<https://uptimerobot.com> y agrega un monitor HTTP a
+`https://TU-SERVICIO.onrender.com/api/health` cada 10 minutos.
+
+**10. Pasar al número definitivo**
+
+1. En Meta: WhatsApp → "API Setup" → "Add phone number". El número no puede
+   estar en uso en la app de WhatsApp normal; se verifica por SMS o llamada.
+2. Cambia en Render `WHATSAPP_PHONE_NUMBER_ID` por el del número nuevo (y
+   `WHATSAPP_TOKEN` si generaste otro).
+3. Pon en `WHATSAPP_NUMEROS_AUTORIZADOS` los celulares de la abuela y la
+   mamá.
+4. Es probable que Meta pida pasar la app a modo "Live" (necesita la
+   dirección de una política de privacidad) y registrar un medio de pago.
+
+No hay que cambiar nada en el código.
+
+### Si el bot no responde
+
+Revisa en este orden (los mensajes de error aparecen en Render → "Logs"):
+
+1. **¿Render está despierto?** Abre `/api/health` en el navegador.
+2. **`mensaje ignorado de un número no autorizado (57…)`** en los logs: el
+   número no está en `WHATSAPP_NUMEROS_AUTORIZADOS`, o está escrito distinto.
+   Copia el número tal como aparece en ese mensaje.
+3. **`faltan variables de entorno: …`**: falta alguna de las 6 en Render.
+4. **`Meta rechazó el envío (401)`**: el `WHATSAPP_TOKEN` venció (era el de
+   24 horas) o no tiene permisos — repite el paso 4.
+5. **`Meta rechazó el envío`** con otro código, usando el número de prueba:
+   el celular no está en la lista de destinatarios del paso 2.
+6. **`AuthenticationError`** o error de saldo: revisa `ANTHROPIC_API_KEY` y
+   el saldo en Anthropic. El bot responde "Tuve un problema y no registré
+   nada".
+7. **No llega nada a los logs**: el webhook no quedó suscrito a `messages`
+   (paso 7), o `META_APP_SECRET` no coincide (Meta recibe un 401).
 
 ## Ideas para el futuro
 
